@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AstroCrop 2.31 — прототип</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EBD2AE;--panel:#FBF1E2;--panel2:#F3DFC3;--ink:#2B1A10;--muted:#7A5A44;--line:#D6B48C;
+  --accent:#2E55C8;--accent-ink:#FFFFFF;--warn:#A8432A;--ok:#2F7A4E;
+  --sky1:#E2AE7C;--sky2:#F6E2C6;--ridge:#C8875A;--ground:#AE6943;--hull:#FBF5EC;--sun:#FFF6E6;
+  color-scheme:light;box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#10172B;--panel:#18223D;--panel2:#22305A;--ink:#F2E3CD;--muted:#A8A6BC;--line:#33416E;
+    --accent:#86A6FF;--accent-ink:#0E1630;--warn:#E58A68;--ok:#72D29C;
+    --sky1:#0C1530;--sky2:#3A5CA8;--ridge:#4A2F42;--ground:#5C3426;--hull:#DCE0EA;--sun:#CFE0FF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10172B;--panel:#18223D;--panel2:#22305A;--ink:#F2E3CD;--muted:#A8A6BC;--line:#33416E;
+  --accent:#86A6FF;--accent-ink:#0E1630;--warn:#E58A68;--ok:#72D29C;
+  --sky1:#0C1530;--sky2:#3A5CA8;--ridge:#4A2F42;--ground:#5C3426;--hull:#DCE0EA;--sun:#CFE0FF;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.45 'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;padding-bottom:92px;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.hud{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line);padding:10px 14px 10px}
+.hud-in{max-width:720px;margin:0 auto}
+.hud-top{display:flex;align-items:center;gap:10px}
+.brand{font:700 17px/1 'Unbounded','Golos Text',sans-serif;letter-spacing:-.02em;white-space:nowrap}
+.ver{font:500 10.5px/1 'Unbounded',sans-serif;background:var(--accent);color:var(--accent-ink);padding:3px 7px;border-radius:999px;margin-left:6px;vertical-align:2px}
+.lvl{margin-left:auto;display:flex;align-items:center;gap:7px;font-weight:600;font-size:13px;white-space:nowrap}
+.xp{width:58px;height:6px;border-radius:3px;background:var(--panel2);overflow:hidden}
+.xp i{display:block;height:100%;background:var(--accent)}
+.lang{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 4px;font:600 12px 'Golos Text',sans-serif;color:var(--ink)}
+.res{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px 3px 3px;border-radius:999px;background:var(--panel2);font:600 13px/1.2 'Golos Text',sans-serif;font-variant-numeric:tabular-nums;border:0;color:var(--ink)}
+button.chip{cursor:pointer}
+.sym{display:inline-grid;place-items:center;min-width:21px;height:21px;padding:0 4px;border-radius:999px;font:700 9.5px/1 'Unbounded',sans-serif;font-style:normal;background:var(--ink);color:var(--panel)}
+.sym.iso{background:var(--accent);color:var(--accent-ink);font-size:12px}
+.sym.ti{background:#878D98;color:#fff}.sym.si{background:#4F6377;color:#fff}.sym.he{background:#7A4FB3;color:#fff}
+
+main{max-width:720px;margin:0 auto;padding:14px 14px 0}
+h2{font:700 18px/1.25 'Unbounded',sans-serif;margin:24px 0 10px;letter-spacing:-.015em}
+main>h2:first-child,main>.scene:first-child{margin-top:4px}
+h3{margin:0 0 6px;font:700 15.5px/1.3 'Golos Text',sans-serif}
+.note{color:var(--muted);font-size:13.5px;margin:-4px 0 12px;max-width:62ch}
+.small{font-size:12.5px;color:var(--muted)}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sp{margin-left:auto}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:10px;padding:10px 14px;background:var(--accent);color:var(--accent-ink);font:600 14px/1.2 'Golos Text',sans-serif;cursor:pointer;min-height:40px}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.sm{padding:6px 10px;min-height:32px;font-size:13px;border-radius:8px}
+.btn.wide{width:100%}
+.btn.danger{background:transparent;color:var(--warn);border:1.5px solid var(--warn)}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+
+.bar{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0}
+
+.domes{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.dome{background:var(--panel);border:1px solid var(--line);border-radius:96px 96px 14px 14px;padding:26px 12px 12px;text-align:center;min-height:156px;display:flex;flex-direction:column;justify-content:flex-end;gap:7px}
+.dome .em{font-size:32px;line-height:1}
+.dome .nm{font-weight:600;font-size:13.5px}
+.crops{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.crops button{font-size:20px;padding:6px 0;border-radius:8px;background:var(--panel2);border:1px solid transparent;cursor:pointer;line-height:1.1}
+.crops button:hover{border-color:var(--line)}
+
+.fac{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;margin-bottom:8px;display:grid;gap:8px}
+.fac .hd{display:flex;align-items:baseline;gap:8px}
+.recipes{display:flex;gap:6px;flex-wrap:wrap}
+
+.stock{display:flex;flex-wrap:wrap;gap:6px}
+.stock .chip{padding:5px 10px;font-weight:500}
+.stock .chip b{font-weight:700;margin-left:2px}
+
+.order{background:var(--panel);border-radius:6px;padding:14px;margin-bottom:12px;border-left:4px solid var(--accent)}
+.order .id{font:500 11px/1 'Unbounded',sans-serif;color:var(--muted)}
+.perf{border-top:2px dashed var(--line);margin:12px -14px 10px}
+.ln{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+.have.ok{color:var(--ok);font-weight:600}.have.no{color:var(--warn);font-weight:600}
+
+.scene{width:100%;height:auto;display:block;border-radius:18px;border:1px solid var(--line);background:var(--sky2)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px}
+.big{font:700 26px/1.1 'Unbounded',sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.crates{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.crate{border:2px dashed var(--line);border-radius:6px;padding:10px 6px;text-align:center;background:var(--panel2);display:grid;gap:4px;align-content:start}
+.crate.f{border-style:solid;border-color:var(--accent);background:var(--panel)}
+.crate .em{font-size:24px;line-height:1.1}
+.crate .q{font-weight:700}
+
+#ship{transform-box:view-box}
+.s-flight #ship{opacity:0}
+.s-flight.launch #ship{animation:launch 1.9s cubic-bezier(.55,0,.85,.35) forwards}
+.land #ship{animation:land 1.7s cubic-bezier(.15,.6,.35,1)}
+#flame{display:none}
+.launch #flame,.land #flame{display:inline;animation:flick .12s infinite alternate}
+@keyframes launch{0%{transform:translateY(0);opacity:1}12%{transform:translateY(2px);opacity:1}100%{transform:translateY(-240px);opacity:0}}
+@keyframes land{0%{transform:translateY(-240px);opacity:0}25%{opacity:1}100%{transform:translateY(0);opacity:1}}
+@keyframes flick{from{opacity:.7}to{opacity:1}}
+
+.tasks{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.tasks li{display:grid;grid-template-columns:28px 1fr auto;gap:8px;align-items:center;padding:10px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+.tasks li.cur{border-color:var(--accent);border-width:2px}
+.tasks li.done{opacity:.6}
+.tasks .n{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--panel2);font:700 11px 'Unbounded',sans-serif}
+.tasks li.done .n{background:var(--ok);color:#fff}
+.tasks li.cur .n{background:var(--accent);color:var(--accent-ink)}
+.lb{list-style:none;padding:0;margin:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.lb li{display:grid;grid-template-columns:30px 1fr auto;gap:8px;padding:9px 12px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.lb li:first-child{border-top:0}
+.lb li.me{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.lb .r{font:700 12px/1.6 'Unbounded',sans-serif}
+
+.tg{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.tg:first-of-type{border-top:0}
+.tg .d{grid-column:1;font-size:12.5px;color:var(--muted)}
+.tg input{grid-row:1/span 2;grid-column:2;width:22px;height:22px;accent-color:var(--accent)}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px}
+.seg button{border:1.5px solid var(--line);background:transparent;border-radius:8px;padding:7px 2px;font-size:12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.cheats{display:flex;flex-wrap:wrap;gap:6px}
+.log{list-style:none;margin:0;padding:0;font-size:12.5px;display:grid;gap:4px}
+.log li{display:flex;gap:8px;justify-content:space-between;padding:6px 8px;border-radius:6px;background:var(--panel2);font-variant-numeric:tabular-nums}
+.log code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;overflow-wrap:anywhere}
+.k-ok{color:var(--ok);font-weight:600}.k-dup{color:var(--accent);font-weight:600}.k-lost{color:var(--warn);font-weight:600}
+.spec{margin:0;padding-left:20px;font-size:13.5px;display:grid;gap:4px}
+.spec li::marker{color:var(--ok)}
+.credit{font-size:12.5px;color:var(--muted);margin:22px 0 8px;max-width:60ch}
+
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);z-index:6;padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs-in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+.tabs button{background:none;border:0;padding:8px 2px 10px;font:500 11.5px/1.2 'Golos Text',sans-serif;color:var(--muted);display:grid;justify-items:center;gap:3px;cursor:pointer;position:relative}
+.tabs .ic{font-size:19px;line-height:1}
+.tabs button[aria-current="page"]{color:var(--accent);font-weight:700}
+.tabs .dot{position:absolute;top:6px;right:calc(50% - 18px);width:8px;height:8px;border-radius:50%;background:var(--warn)}
+
+.toast{position:fixed;left:50%;bottom:calc(78px + env(safe-area-inset-bottom,0px));transform:translate(-50%,8px);width:max-content;max-width:min(92vw,460px);background:var(--ink);color:var(--panel);padding:10px 14px;border-radius:12px;font-size:13.5px;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.warn{background:var(--warn);color:#fff}
+.mbg{position:fixed;inset:0;background:rgba(20,12,6,.55);display:grid;place-items:center;padding:20px;z-index:30}
+.modal{background:var(--panel);border-radius:18px;padding:20px;max-width:420px;width:100%;max-height:85vh;overflow:auto}
+.modal h2{margin-top:0}
+.pack{display:flex;align-items:center;gap:12px;padding:14px;border:2px solid var(--accent);border-radius:14px;margin:12px 0}
+.pack .big{font-size:22px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.s-flight #ship{opacity:0}}
+@media (min-width:600px){.domes{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<header class="hud"><div class="hud-in" id="hud"></div></header>
+<main id="view"></main>
+<nav class="tabs" aria-label="Разделы"><div class="tabs-in" id="tabs"></div></nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="modal"></div>
+
+<script>
+(function(){
+const H=3600, LOAD_T=4*H, FLIGHT_T=4*H, BOOST=30, COSMO_LVL=8, COSMO_COST=2000, SEASON=7*24*H;
+const CROPS={wheat:{t:1800,e:'🌾'},soy:{t:3600,e:'🫘'},potato:{t:2700,e:'🥔'},spirulina:{t:5400,e:'🌿'}};
+const GOODS={bread:{e:'🍞'},pie:{e:'🥧'},protein:{e:'🧪'},oxygen:{e:'🫧'}};
+const RECIPE={bread:{in:{wheat:2},t:1200,out:2},pie:{in:{wheat:1,potato:1},t:1800,out:2},protein:{in:{soy:2},t:1800,out:2},oxygen:{in:{spirulina:2},t:1500,out:2}};
+const FAC={bakery:['bread','pie'],bio:['protein'],oxy:['oxygen']};
+const RARE=['ti','si','he'];
+const EMO=Object.assign({},...Object.entries(CROPS).map(([k,v])=>({[k]:v.e})),...Object.entries(GOODS).map(([k,v])=>({[k]:v.e})));
+const TASKS=[['harvest',5],['produce',6],['order',3],['shuttle',1],['rare',3]];
+const PTS={harvest:5,produce:3,order:20,shuttle:30,rare:10};
+const BOTS=[['Ares Prime',140,11],['Колония Тарсис',90,9],['Red Harvest',60,8],['Олимп-3',120,6],['Hellas Farms',30,7],['Новая Кидония',70,5],['Dust Devils',20,6],['Утопия-7',45,4],['Valles Co-op',10,3]];
+const SPEEDS=[1440,360,120,60];
+
+const L={
+ru:{app_sub:'прототип',lvl:'Ур.',u_h:'ч',u_m:'м',u_s:'с',u_cr:'кр',u_xp:'опыта',cr:'Кр',
+tab_colony:'Колония',tab_orders:'Заказы',tab_cosmo:'Космодром',tab_event:'Ивент',tab_ops:'Пульт',
+i_wheat:'Марсианская пшеница',i_soy:'Соя',i_potato:'Картофель',i_spirulina:'Спирулина',i_bread:'Хлеб',i_pie:'Картофельный пирог',i_protein:'Белковый концентрат',i_oxygen:'Кислородный картридж',
+f_bakery:'Пекарня',f_bio:'Биореактор',f_oxy:'Завод кислорода',r_ti:'Титан',r_si:'Кремний',r_he:'Гелий-3',
+domes:'Купола-фермы',dome_free:'Купол свободен',harvest:'Собрать (+2)',ready:'Урожай готов',
+factories:'Фабрики',f_idle:'Выберите рецепт',f_collect:'Забрать (+{n})',storage:'Склад',crops_h:'Культуры',goods_h:'Товары',
+orders_h:'Заказы станции «Орбита-1»',orders_note:'Награда — кредиты и опыт, изредка редкий материал. До 2.31 это единственный источник редких материалов.',o_deliver:'Отправить на станцию',o_sending:'Связь с сервером…',reward:'Награда',order:'Заказ',
+cosmo_req:'Открывается на {l} уровне колонии. Стоимость: {c} кредитов, редкие материалы не требуются.',build:'Построить за {c} кр',need_lvl:'Нужен {l} уровень колонии',need_cr:'Не хватает кредитов',built:'Космодром построен',
+sh_idle_h:'Шаттл на площадке',sh_idle_p:'Список товаров для трёх ящиков составится только из того, что вы уже производите. На загрузку — до 4 часов.',sh_start:'Начать загрузку',sh_prod:'Сейчас производите',sh_none:'пока ничего',
+sh_need_goods:'Сначала произведите хотя бы один товар на фабрике',sh_loading_h:'Загрузка ящиков',sh_left:'До вылета',sh_crate:'Ящик {n}',sh_load:'Загрузить',sh_loaded:'Загружен',sh_have:'на складе {h}',
+sh_send:'Отправить шаттл ({n}/3)',sh_send_note:'По истечении таймера шаттл улетит с тем, что загружено. Пустые ящики награды не дают.',
+sh_flight_h:'Шаттл в рейсе',sh_back:'До возвращения',sh_cargo:'Заполнено ящиков: {n} из 3',sh_boost:'Вернуть сейчас за 30 изотопов',
+sh_ret_h:'Шаттл вернулся',sh_ret_p:'Награда: {n} редк. материал(а), тип случайный.',sh_ret_0:'Ящики пустые — награды нет.',sh_claim:'Забрать награду',sh_claim0:'Завершить рейс',sh_nocd:'Кулдауна нет: новый рейс можно начать сразу после возврата.',
+sh_auto:'Время загрузки вышло: шаттл улетел с {n}/3 ящиками',sh_flights:'Рейсов выполнено: {n}',sh_one:'В 2.31 у игрока один шаттл.',
+t_got:'Получено: {r}',t_empty:'Пустые ящики награды не дают',t_once:'Обрыв сети: клиент повторил запрос, сервер распознал повтор. Награда выдана один раз.',t_double:'Обрыв сети: награда выдана дважды. Это баг F из 2.30.',
+lvl_up:'Уровень колонии {l}!',cosmo_open:'Уровень 8: можно построить космодром',
+shop_h:'Магазин изотопов',shop_short:'Для ускорения нужно 30 изотопов, у вас {n}. Ничего не списано.',shop_pack:'100 изотопов',shop_buy:'Купить (тест)',shop_note:'Это мок: оплата не проводится.',close:'Закрыть',t_bought:'+100 изотопов',
+ev_h:'Экспедиционный сезон',ev_p:'Недельный ивент с цепочкой заданий и общим лидербордом.',ev_left:'До конца сезона',ev_over:'Сезон завершён',ev_pts:'Ваши очки',ev_chain:'Цепочка заданий',ev_board:'Общий лидерборд',ev_you:'Ваша колония',
+ev_harvest:'Соберите урожай {n} раз',ev_produce:'Произведите {n} товаров',ev_order:'Выполните {n} орбитальных заказа',ev_shuttle:'Отправьте шаттл {n} раз',ev_rare:'Получите {n} редких материала',
+ev_task_done:'Задание сезона выполнено: +100 очков',ev_chain_done:'Цепочка пройдена: +50 изотопов',ev_final:'За всю цепочку — 50 изотопов',ev_rank:'Ваше место: {r}',
+ops_h:'Пульт тестирования',ops_p:'Инструменты прототипа — в самой игре их нет.',speed:'Скорость времени',sp0:'4 ч = 10 с',sp1:'4 ч = 40 с',sp2:'4 ч = 2 мин',sp3:'4 ч = 4 мин',
+net:'Обрыв сети при выдаче награды',net_d:'Ответ сервера теряется, клиент повторяет тот же запрос.',bugF:'Сервер без защиты от повтора (как в 2.30)',bugF_d:'Воспроизводит баг F. В 2.31 выдача защищена.',an:'Аналитика из 2.32',an_d:'shuttle_sent и shuttle_returned. В 2.31 событий нет.',
+cheats:'Быстрые действия',c_lvl:'+1 уровень',c_cr:'+1000 кр',c_iso:'+30 изотопов',c_goods:'+5 каждого товара',c_ev:'Перезапустить сезон',c_reset:'Сбросить прогресс',confirm_reset:'Сбросить весь прогресс?',
+reqlog:'Журнал выдачи наград',rl_ok:'выдано',rl_dup:'повтор отклонён',rl_lost:'ответ потерян',evlog:'События аналитики',empty_log:'Пока пусто',
+spec_h:'Сверка со спецификацией 2.31',assum_h:'Допущения прототипа — уточнить у Паши',
+credit:'Прототип к тестовому заданию Junior PM — собрал Нико. Все механики — моки, сервер имитируется в браузере, прогресс хранится на этом устройстве.',
+intro_p:'Играбельный прототип по материалам тестового: купола, фабрики, заказы «Орбиты-1», грузовой шаттл по утверждённой спецификации 2.31 и «Экспедиционный сезон». Время ускорено: 4 часа игры проходят за 40 секунд.',
+intro_tip:'Посадите культуры, переработайте их на фабриках и выполните пару заказов — на 8 уровне откроется космодром. Баг F и аналитику можно включить на «Пульте».',intro_go:'Начать'},
+en:{app_sub:'prototype',lvl:'Lv',u_h:'h',u_m:'m',u_s:'s',u_cr:'cr',u_xp:'XP',cr:'Cr',
+tab_colony:'Colony',tab_orders:'Orders',tab_cosmo:'Spaceport',tab_event:'Event',tab_ops:'Ops',
+i_wheat:'Martian wheat',i_soy:'Soy',i_potato:'Potato',i_spirulina:'Spirulina',i_bread:'Bread',i_pie:'Potato pie',i_protein:'Protein concentrate',i_oxygen:'Oxygen cartridge',
+f_bakery:'Bakery',f_bio:'Bioreactor',f_oxy:'Oxygen plant',r_ti:'Titanium',r_si:'Silicon',r_he:'Helium-3',
+domes:'Farm domes',dome_free:'Dome is free',harvest:'Harvest (+2)',ready:'Ready',
+factories:'Factories',f_idle:'Pick a recipe',f_collect:'Collect (+{n})',storage:'Storage',crops_h:'Crops',goods_h:'Goods',
+orders_h:'Orbita-1 station orders',orders_note:'Pays credits and XP, rarely a rare material. Before 2.31 this is the only source of rare materials.',o_deliver:'Deliver to station',o_sending:'Contacting server…',reward:'Reward',order:'Order',
+cosmo_req:'Unlocks at colony level {l}. Cost: {c} credits, no rare materials needed.',build:'Build for {c} cr',need_lvl:'Requires colony level {l}',need_cr:'Not enough credits',built:'Spaceport built',
+sh_idle_h:'Shuttle on the pad',sh_idle_p:'The goods list for three crates is drawn only from what you already produce. Loading takes up to 4 hours.',sh_start:'Start loading',sh_prod:'You produce',sh_none:'nothing yet',
+sh_need_goods:'Produce at least one good at a factory first',sh_loading_h:'Loading crates',sh_left:'Until departure',sh_crate:'Crate {n}',sh_load:'Load',sh_loaded:'Loaded',sh_have:'in stock {h}',
+sh_send:'Send shuttle ({n}/3)',sh_send_note:'When the timer ends the shuttle leaves with whatever is loaded. Empty crates give no reward.',
+sh_flight_h:'Shuttle in flight',sh_back:'Until return',sh_cargo:'Crates filled: {n} of 3',sh_boost:'Return now for 30 isotopes',
+sh_ret_h:'Shuttle is back',sh_ret_p:'Reward: {n} rare material(s), random type.',sh_ret_0:'Crates were empty — no reward.',sh_claim:'Collect reward',sh_claim0:'Finish flight',sh_nocd:'No cooldown: start the next flight right away.',
+sh_auto:'Loading time is up: the shuttle left with {n}/3 crates',sh_flights:'Flights completed: {n}',sh_one:'In 2.31 the player has one shuttle.',
+t_got:'Received: {r}',t_empty:'Empty crates give no reward',t_once:'Network drop: the client retried, the server recognised the repeat. Reward granted once.',t_double:'Network drop: reward granted twice. This is bug F from 2.30.',
+lvl_up:'Colony level {l}!',cosmo_open:'Level 8: the spaceport can be built',
+shop_h:'Isotope shop',shop_short:'Speeding up needs 30 isotopes, you have {n}. Nothing was charged.',shop_pack:'100 isotopes',shop_buy:'Buy (test)',shop_note:'This is a mock: no payment is made.',close:'Close',t_bought:'+100 isotopes',
+ev_h:'Expedition Season',ev_p:'A week-long event with a task chain and a shared leaderboard.',ev_left:'Season ends in',ev_over:'Season is over',ev_pts:'Your points',ev_chain:'Task chain',ev_board:'Leaderboard',ev_you:'Your colony',
+ev_harvest:'Harvest {n} times',ev_produce:'Produce {n} goods',ev_order:'Complete {n} orbital orders',ev_shuttle:'Send the shuttle {n} time',ev_rare:'Get {n} rare materials',
+ev_task_done:'Season task done: +100 points',ev_chain_done:'Chain complete: +50 isotopes',ev_final:'Whole chain pays 50 isotopes',ev_rank:'Your rank: {r}',
+ops_h:'Test console',ops_p:'Prototype tools — not part of the game.',speed:'Time speed',sp0:'4 h = 10 s',sp1:'4 h = 40 s',sp2:'4 h = 2 min',sp3:'4 h = 4 min',
+net:'Network drop on reward',net_d:'The server response is lost and the client repeats the same request.',bugF:'Server without repeat protection (2.30)',bugF_d:'Reproduces bug F. In 2.31 rewards are protected.',an:'Analytics from 2.32',an_d:'shuttle_sent and shuttle_returned. No events in 2.31.',
+cheats:'Quick actions',c_lvl:'+1 level',c_cr:'+1000 cr',c_iso:'+30 isotopes',c_goods:'+5 of each good',c_ev:'Restart season',c_reset:'Reset progress',confirm_reset:'Reset all progress?',
+reqlog:'Reward request log',rl_ok:'granted',rl_dup:'repeat rejected',rl_lost:'response lost',evlog:'Analytics events',empty_log:'Nothing yet',
+spec_h:'Checked against the 2.31 spec',assum_h:'Prototype assumptions — to confirm with Pasha',
+credit:'Prototype for the Junior PM test assignment, built by Nico. Every mechanic is mocked, the server is simulated in the browser, and progress stays on this device.',
+intro_p:'A playable prototype from the test materials: domes, factories, Orbita-1 orders, the cargo shuttle per the approved 2.31 spec, and Expedition Season. Time is sped up: 4 game hours pass in 40 seconds.',
+intro_tip:'Plant crops, process them at factories and complete a few orders — the spaceport unlocks at level 8. Bug F and analytics can be switched on in Ops.',intro_go:'Start'},
+de:{tab_cosmo:'Raumhafen',sh_idle_h:'Shuttle auf der Startrampe',sh_start:'Beladung starten',sh_loading_h:'Kisten beladen',sh_left:'Bis zum Start',sh_crate:'Kiste {n}',sh_load:'Beladen',sh_loaded:'Fertig',sh_have:'auf Lager {h}',sh_send:'Shuttle abschicken ({n}/3)',sh_flight_h:'Shuttle im Flug',sh_back:'Bis zur Rückkehr',sh_boost:'Jetzt zurückholen für 30 Isotope',sh_ret_h:'Das Shuttle ist zurück',sh_claim:'Belohnung abholen',sh_claim0:'Flug abschließen',sh_cargo:'Beladene Kisten: {n} von 3'},
+fr:{tab_cosmo:'Spatioport',sh_idle_h:'Navette sur le pas de tir',sh_start:'Commencer le chargement',sh_loading_h:'Chargement des caisses',sh_left:'Avant le départ',sh_crate:'Caisse {n}',sh_load:'Charger',sh_loaded:'Chargée',sh_have:'en stock {h}',sh_send:'Envoyer la navette ({n}/3)',sh_flight_h:'Navette en vol',sh_back:'Avant le retour',sh_boost:'Rappeler pour 30 isotopes',sh_ret_h:'La navette est de retour',sh_claim:'Récupérer la récompense',sh_claim0:'Terminer le vol',sh_cargo:'Caisses remplies : {n} sur 3'},
+es:{tab_cosmo:'Cosmódromo',sh_idle_h:'Lanzadera en la plataforma',sh_start:'Empezar la carga',sh_loading_h:'Carga de cajas',sh_left:'Hasta el despegue',sh_crate:'Caja {n}',sh_load:'Cargar',sh_loaded:'Cargada',sh_have:'en almacén {h}',sh_send:'Enviar lanzadera ({n}/3)',sh_flight_h:'Lanzadera en vuelo',sh_back:'Hasta el regreso',sh_boost:'Traer ya por 30 isótopos',sh_ret_h:'La lanzadera ha vuelto',sh_claim:'Recoger recompensa',sh_claim0:'Terminar vuelo',sh_cargo:'Cajas llenas: {n} de 3'}
+};
+const SPEC={ru:[
+'Космодром — 8 уровень колонии, 2 000 кредитов, без редких материалов',
+'В 2.31 у игрока один шаттл',
+'3 ящика; товары в списке — только из уже производимых',
+'Загрузка до 4 ч, затем вылет с тем, что загружено; пустые ящики без награды',
+'Рейс 4 ч; 1 редкий материал за заполненный ящик, максимум 3, тип случайный',
+'Ускорение — 30 изотопов; при нехватке открывается магазин, списания нет',
+'Выдача награды защищена от повтора при обрыве сети',
+'Кулдауна между рейсами нет',
+'Языки RU, EN, DE, FR, ES (экран шаттла; остальной прототип — RU и EN)',
+'Аналитики в 2.31 нет — только флаг предпросмотра 2.32',
+'Орбитальные заказы, фермы и фабрики не изменены — шаттл лишь потребляет товары'],
+en:[
+'Spaceport: colony level 8, 2,000 credits, no rare materials',
+'One shuttle per player in 2.31',
+'3 crates; goods drawn only from what the player already produces',
+'Up to 4 h loading, then departs with what is loaded; empty crates pay nothing',
+'4 h flight; 1 rare material per filled crate, max 3, random type',
+'Speed-up costs 30 isotopes; if short, the shop opens and nothing is charged',
+'Reward grant is protected from repeats on network drop',
+'No cooldown between flights',
+'RU, EN, DE, FR, ES (shuttle screen; rest of the prototype is RU and EN)',
+'No analytics in 2.31 — only a 2.32 preview flag',
+'Orbital orders, farms and factories unchanged — the shuttle only consumes goods']};
+const ASSUM={ru:[
+'Таймер загрузки стартует по кнопке «Начать загрузку» — момент старта в спеке не указан.',
+'Ящик загружается целиком; частичная загрузка не засчитывается.',
+'Шаттл можно отправить раньше таймера — спека прямо этого не описывает.',
+'Объём ящика (2–4 шт.) условный — цифр в спеке нет.',
+'Если игрок ещё ничего не производит, список не составляется — поведение не описано.',
+'Награду игрок забирает вручную после возвращения шаттла.'],
+en:[
+'The loading timer starts on “Start loading” — the spec doesn’t say when it starts.',
+'A crate is loaded all at once; partial loading doesn’t count.',
+'The shuttle can be sent before the timer ends — the spec doesn’t say so explicitly.',
+'Crate size (2–4 units) is a placeholder — the spec has no numbers.',
+'If the player produces nothing yet, no list is generated — behaviour not specified.',
+'The player collects the reward manually after the shuttle returns.']};
+
+const KEY='astrocrop-231-v1';
+let S, tab='colony', ui={anim:null,busy:{},toastT:null,lastSig:''};
+const rnd=n=>Math.floor(Math.random()*n), pick=a=>a[rnd(a.length)];
+function t(k,v){const l=S?S.set.lang:'ru';let s=(L[l]&&L[l][k]!=null)?L[l][k]:(L.en[k]!=null&&l!=='ru'?L.en[k]:(L.ru[k]!=null?L.ru[k]:k));if(v)for(const x in v)s=s.split('{'+x+'}').join(v[x]);return s}
+const nm=k=>t('i_'+k);
+const need=l=>60+l*10;
+function fmt(sec){sec=Math.max(0,Math.ceil(sec));const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;
+  if(h>0)return `${h}${t('u_h')} ${String(m).padStart(2,'0')}${t('u_m')}`;if(m>0)return `${m}${t('u_m')} ${String(s).padStart(2,'0')}${t('u_s')}`;return `${s}${t('u_s')}`}
+function num(n){return n.toLocaleString(S.set.lang==='ru'?'ru-RU':'en-US')}
+
+function fresh(){const s={v:1,gt:0,last:Date.now(),level:7,xp:0,credits:1600,iso:40,rare:{ti:0,si:0,he:0},
+  inv:{wheat:4,soy:2,potato:0,spirulina:0,bread:0,pie:0,protein:0,oxygen:0},produced:[],
+  domes:[0,1,2,3].map(()=>({c:null,end:0})),fac:{bakery:{r:null,end:0},bio:{r:null,end:0},oxy:{r:null,end:0}},
+  orders:[],oid:101,cosmo:false,sh:{st:'idle',crates:[],loadEnd:0,flightEnd:0,filled:0,reward:null,cid:null,flights:0},
+  ev:{pts:0,step:0,cnt:0},evStart:0,claims:[],reqlog:[],events:[],set:{lang:'ru',speed:360,net:false,bugF:false,an:false},intro:false};
+  S=s;for(let i=0;i<3;i++)s.orders.push(newOrder());return s}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const s=JSON.parse(r);if(s&&s.v===1){S=s;const dt=Math.min((Date.now()-(s.last||Date.now()))/1000,3600);S.gt+=dt*S.set.speed;return}}}catch(e){}fresh()}
+function save(){S.last=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+function newOrder(){const pool=['bread','pie','protein','oxygen','wheat','soy','potato','spirulina'];const n=Math.random()<.5?1:2;const lines={};
+  while(Object.keys(lines).length<n)lines[pick(pool)]=2+rnd(3);
+  const reward={cr:Math.round((100+Math.random()*250)/10)*10,xp:25+rnd(16)};if(Math.random()<.15)reward.rare=[pick(RARE)];
+  return{id:S.oid++,lines,reward}}
+function addXP(n){S.xp+=n;while(S.xp>=need(S.level)){S.xp-=need(S.level);S.level++;toast(t('lvl_up',{l:S.level}));if(S.level===COSMO_LVL)setTimeout(()=>toast(t('cosmo_open')),1600)}}
+function applyReward(r){if(r.cr)S.credits+=r.cr;if(r.xp)addXP(r.xp);if(r.iso)S.iso+=r.iso;if(r.rare&&r.rare.length){r.rare.forEach(k=>S.rare[k]++);track('rare',r.rare.length)}}
+function fmtReward(r){const p=[];if(r.cr)p.push(`${num(r.cr)} ${t('u_cr')}`);if(r.xp)p.push(`${r.xp} ${t('u_xp')}`);if(r.rare)r.rare.forEach(k=>p.push(t('r_'+k)));return p.join(', ')}
+
+/* simulated server: idempotent reward grant keyed by claim id */
+function logReq(id,kind){S.reqlog.unshift({id,kind});if(S.reqlog.length>12)S.reqlog.length=12}
+function serverGrant(id,reward){if(!S.set.bugF&&S.claims.includes(id)){logReq(id,'dup');return 'dup'}
+  applyReward(reward);S.claims.push(id);if(S.claims.length>300)S.claims.shift();logReq(id,'ok');return 'ok'}
+function requestReward(id,reward,cb){ui.busy[id]=true;render();serverGrant(id,reward);
+  if(S.set.net){logReq(id,'lost');setTimeout(()=>{const r=serverGrant(id,reward);delete ui.busy[id];cb(r==='ok'?'double':'retry');save();render()},1000)}
+  else{delete ui.busy[id];cb('once');save();render()}}
+function rewardToast(res,reward){if(res==='double')toast(t('t_double'),'warn');else if(res==='retry')toast(t('t_once'));else toast(reward.rare&&!reward.cr&&!reward.rare.length?t('t_empty'):t('t_got',{r:fmtReward(reward)}))}
+
+function track(k,n=1){if(S.gt>=S.evStart+SEASON)return;const e=S.ev;e.pts+=(PTS[k]||0)*n;
+  if(e.step<TASKS.length&&TASKS[e.step][0]===k){e.cnt+=n;if(e.cnt>=TASKS[e.step][1]){e.pts+=100;e.step++;e.cnt=0;
+    setTimeout(()=>toast(t('ev_task_done')),900);if(e.step===TASKS.length){S.iso+=50;setTimeout(()=>toast(t('ev_chain_done')),2400)}}}}
+function analytics(name,params){if(!S.set.an)return;S.events.unshift({name,params});if(S.events.length>10)S.events.length=10}
+
+/* actions */
+const A={
+ tab(d){tab=d.t;window.scrollTo(0,0);render()},
+ plant(d){const dm=S.domes[d.i];dm.c=d.c;dm.end=S.gt+CROPS[d.c].t;save();render()},
+ harvest(d){const dm=S.domes[d.i];S.inv[dm.c]+=2;dm.c=null;track('harvest');save();render()},
+ cook(d){const r=RECIPE[d.r];for(const k in r.in)if(S.inv[k]<r.in[k])return;for(const k in r.in)S.inv[k]-=r.in[k];S.fac[d.f]={r:d.r,end:S.gt+r.t};save();render()},
+ collect(d){const f=S.fac[d.f],r=RECIPE[f.r];S.inv[f.r]+=r.out;if(!S.produced.includes(f.r))S.produced.push(f.r);track('produce',r.out);S.fac[d.f]={r:null,end:0};save();render()},
+ deliver(d){const i=S.orders.findIndex(o=>o.id==d.id);const o=S.orders[i];if(!o||ui.busy['order:'+o.id])return;
+   for(const g in o.lines)if(S.inv[g]<o.lines[g])return;for(const g in o.lines)S.inv[g]-=o.lines[g];
+   requestReward('order:'+o.id,o.reward,res=>{const j=S.orders.findIndex(x=>x.id===o.id);if(j>=0)S.orders[j]=newOrder();track('order');rewardToast(res,o.reward)})},
+ build(){if(S.level<COSMO_LVL||S.credits<COSMO_COST)return;S.credits-=COSMO_COST;S.cosmo=true;toast(t('built'));save();render()},
+ shStart(){if(!S.produced.length){toast(t('sh_need_goods'),'warn');return}
+   S.sh.crates=[0,1,2].map(()=>({g:pick(S.produced),q:2+rnd(3),f:false}));S.sh.st='loading';S.sh.loadEnd=S.gt+LOAD_T;save();render()},
+ shLoad(d){const c=S.sh.crates[d.i];if(c.f||S.inv[c.g]<c.q)return;S.inv[c.g]-=c.q;c.f=true;save();render()},
+ shSend(){shSend(false)},
+ shBoost(){if(S.iso<BOOST){openShop(true);return}S.iso-=BOOST;shReturn()},
+ shClaim(){const sh=S.sh;if(ui.busy[sh.cid])return;const r=sh.reward;
+   requestReward(sh.cid,r,res=>{sh.flights++;sh.st='idle';sh.crates=[];sh.reward=null;sh.cid=null;
+     if(!r.rare.length&&res!=='double')toast(t('t_empty'));else rewardToast(res,r)})},
+ shop(){openShop(false)},
+ buy(){S.iso+=100;closeModal();toast(t('t_bought'));save();render()},
+ close(){closeModal()},
+ introGo(){S.intro=true;save();closeModal()},
+ speed(d){S.set.speed=+d.v;save();render()},
+ lang(){},
+ c_lvl(){addXP(need(S.level)-S.xp);save();render()},
+ c_cr(){S.credits+=1000;save();render()},
+ c_iso(){S.iso+=30;save();render()},
+ c_goods(){for(const g in GOODS){S.inv[g]+=5;if(!S.produced.includes(g))S.produced.push(g)}save();render()},
+ c_ev(){S.ev={pts:0,step:0,cnt:0};S.evStart=S.gt;save();render()},
+ c_reset(){if(confirm(t('confirm_reset'))){const l=S.set.lang;fresh();S.set.lang=l;S.intro=true;tab='colony';save();render()}}
+};
+function shSend(auto){const sh=S.sh;const filled=sh.crates.filter(c=>c.f).length;sh.filled=filled;sh.st='flight';
+  sh.flightEnd=(auto?sh.loadEnd:S.gt)+FLIGHT_T;ui.anim='launch';track('shuttle');analytics('shuttle_sent',{crates_filled:filled,level:S.level});
+  if(auto)toast(t('sh_auto',{n:filled}));save();render()}
+function shReturn(){const sh=S.sh;const n=Math.min(3,sh.filled);sh.reward={rare:Array.from({length:n},()=>pick(RARE))};
+  sh.cid='shuttle:'+(sh.flights+1)+':'+Math.random().toString(36).slice(2,7);sh.st='returned';ui.anim='land';
+  analytics('shuttle_returned',{crates_filled:sh.filled,level:S.level});save();render()}
+
+/* UI helpers */
+function toast(msg,kind){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show'+(kind?' '+kind:'');clearTimeout(ui.toastT);ui.toastT=setTimeout(()=>el.className='toast',3600)}
+function modal(html){document.getElementById('modal').innerHTML=`<div class="mbg" data-act="bgclose"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;const b=document.querySelector('#modal .btn');if(b)b.focus()}
+function closeModal(){document.getElementById('modal').innerHTML=''}
+function openShop(short){modal(`<h2>${t('shop_h')}</h2>${short?`<p>${t('shop_short',{n:S.iso})}</p>`:''}
+  <div class="pack"><span class="sym iso" aria-hidden="true">⚛</span><div><div class="big">${t('shop_pack')}</div><div class="small">${t('shop_note')}</div></div><b class="sp big">299&nbsp;₽</b></div>
+  <div class="row"><button class="btn" data-act="buy">${t('shop_buy')}</button><button class="btn ghost" data-act="close">${t('close')}</button></div>`)}
+function intro(){modal(`<h2>AstroCrop 2.31</h2><p>${t('intro_p')}</p><p class="small">${t('intro_tip')}</p><button class="btn wide" data-act="introGo">${t('intro_go')}</button>`)}
+const timer=(end,cls='')=>`<span class="${cls}" data-end="${end}">${fmt(end-S.gt)}</span>`;
+const bar=(end,dur)=>`<div class="bar"><i data-end="${end}" data-dur="${dur}" style="width:${Math.min(100,100*(1-(end-S.gt)/dur))}%"></i></div>`;
+const sym=k=>k==='ti'?'Ti':k==='si'?'Si':'³He';
+
+function renderHud(){const p=Math.min(100,100*S.xp/need(S.level));
+  document.getElementById('hud').innerHTML=`<div class="hud-top"><div class="brand">AstroCrop<span class="ver">2.31</span></div>
+  <div class="lvl">${t('lvl')} ${S.level}<span class="xp" title="${S.xp}/${need(S.level)}"><i style="width:${p}%"></i></span></div>
+  <select class="lang" id="lang" aria-label="Language">${['ru','en','de','fr','es'].map(l=>`<option value="${l}"${S.set.lang===l?' selected':''}>${l.toUpperCase()}</option>`).join('')}</select></div>
+  <div class="res"><span class="chip" title="Credits"><i class="sym">${t('cr')}</i>${num(S.credits)}</span>
+  <button class="chip" data-act="shop" title="Isotopes"><i class="sym iso">⚛</i>${num(S.iso)}</button>
+  ${RARE.map(k=>`<span class="chip" title="${t('r_'+k)}"><i class="sym ${k}">${sym(k)}</i>${S.rare[k]}</span>`).join('')}</div>`;
+  document.getElementById('lang').onchange=e=>{S.set.lang=e.target.value;document.documentElement.lang=S.set.lang;save();render()}}
+function renderTabs(){const items=[['colony','🌱'],['orders','🛰️'],['cosmo','🚀'],['event','🏁'],['ops','🛠️']];
+  const alert=k=>k==='cosmo'&&S.cosmo&&S.sh.st==='returned';
+  document.getElementById('tabs').innerHTML=items.map(([k,ic])=>`<button data-act="tab" data-t="${k}"${tab===k?' aria-current="page"':''}><span class="ic" aria-hidden="true">${ic}</span>${t('tab_'+k)}${alert(k)?'<span class="dot"></span>':''}</button>`).join('')}
+
+function vColony(){let h=`<h2>${t('domes')}</h2><div class="domes">`;
+  S.domes.forEach((d,i)=>{if(!d.c)h+=`<div class="dome"><div class="small">${t('dome_free')}</div><div class="crops">${Object.keys(CROPS).map(c=>`<button data-act="plant" data-i="${i}" data-c="${c}" title="${nm(c)} (${fmt(CROPS[c].t)})" aria-label="${nm(c)}">${CROPS[c].e}</button>`).join('')}</div></div>`;
+    else if(S.gt<d.end)h+=`<div class="dome"><div class="em">${CROPS[d.c].e}</div><div class="nm">${nm(d.c)}</div>${bar(d.end,CROPS[d.c].t)}<div class="small">${timer(d.end)}</div></div>`;
+    else h+=`<div class="dome"><div class="em">${CROPS[d.c].e}</div><div class="nm">${t('ready')}</div><button class="btn sm" data-act="harvest" data-i="${i}">${t('harvest')}</button></div>`});
+  h+=`</div><h2>${t('factories')}</h2>`;
+  for(const f in FAC){const st=S.fac[f];h+=`<div class="fac"><div class="hd"><h3>${t('f_'+f)}</h3>`;
+    if(!st.r){h+=`<span class="small sp">${t('f_idle')}</span></div><div class="recipes">`+FAC[f].map(r=>{const R=RECIPE[r];const ok=Object.entries(R.in).every(([k,v])=>S.inv[k]>=v);
+      return `<button class="btn ghost sm" data-act="cook" data-f="${f}" data-r="${r}"${ok?'':' disabled'}>${Object.entries(R.in).map(([k,v])=>`${v}${EMO[k]}`).join('+')} → ${R.out}${EMO[r]} ${nm(r)} <span class="small">${fmt(R.t)}</span></button>`}).join('')+`</div>`}
+    else if(S.gt<st.end)h+=`<span class="small sp">${EMO[st.r]} ${nm(st.r)}, ${timer(st.end)}</span></div>${bar(st.end,RECIPE[st.r].t)}`;
+    else h+=`<span class="sp"></span><button class="btn sm" data-act="collect" data-f="${f}">${EMO[st.r]} ${t('f_collect',{n:RECIPE[st.r].out})}</button></div>`;
+    h+=`</div>`}
+  const chips=ks=>ks.map(k=>`<span class="chip">${EMO[k]} ${nm(k)} <b>${S.inv[k]}</b></span>`).join('');
+  h+=`<h2>${t('storage')}</h2><p class="small">${t('crops_h')}</p><div class="stock">${chips(Object.keys(CROPS))}</div><p class="small">${t('goods_h')}</p><div class="stock">${chips(Object.keys(GOODS))}</div>`;
+  return h}
+
+function vOrders(){let h=`<h2>${t('orders_h')}</h2><p class="note">${t('orders_note')}</p>`;
+  S.orders.forEach(o=>{const ok=Object.entries(o.lines).every(([g,q])=>S.inv[g]>=q);const busy=ui.busy['order:'+o.id];
+    h+=`<div class="order"><div class="id">${t('order')} №${o.id}</div>`+Object.entries(o.lines).map(([g,q])=>`<div class="ln"><span>${EMO[g]} ${nm(g)} × ${q}</span><span class="have ${S.inv[g]>=q?'ok':'no'}">${S.inv[g]}/${q}</span></div>`).join('')+
+    `<div class="perf"></div><div class="row"><span class="small">${t('reward')}:</span><span><b>${fmtReward(o.reward)}</b></span>
+    <button class="btn sm sp" data-act="deliver" data-id="${o.id}"${ok&&!busy?'':' disabled'}>${busy?t('o_sending'):t('o_deliver')}</button></div></div>`});
+  return h}
+
+function scene(){const sh=S.sh,st=S.cosmo?sh.st:'none';let cls='s-'+st+(ui.anim?' '+ui.anim:'');ui.anim=null;
+  const crates=(st==='idle'||st==='loading')?[0,1,2].map(i=>{const c=sh.crates[i];const f=c&&c.f;return `<rect x="${232+i*20}" y="137" width="16" height="14" rx="2" fill="${f?'var(--accent)':'var(--hull)'}" stroke="var(--ink)" stroke-width="1.2" opacity="${st==='idle'?.5:1}"/>`}).join(''):'';
+  const ship=`<g transform="translate(180,151)"><g id="ship"><path id="flame" d="M-8,0 L0,22 L8,0Z" fill="#F2A23A"/>
+   <path d="M0,-76 C11,-63 13,-43 13,-22 L13,0 L-13,0 L-13,-22 C-13,-43 -11,-63 0,-76Z" fill="var(--hull)" stroke="var(--ink)" stroke-width="1.6"/>
+   <path d="M-13,-17 L-25,2 L-13,0Z M13,-17 L25,2 L13,0Z" fill="var(--accent)" stroke="var(--ink)" stroke-width="1.3"/>
+   <circle cy="-47" r="5.5" fill="var(--accent)" stroke="var(--ink)" stroke-width="1.3"/><rect x="-13" y="-15" width="26" height="4" fill="var(--ink)" opacity=".18"/></g></g>`;
+  const pad=`<rect x="144" y="151" width="72" height="6" rx="2" fill="var(--ink)" opacity=".75"/><rect x="126" y="84" width="5" height="68" fill="var(--ink)" opacity=".55"/><path d="M131 96 H150 M131 116 H146" stroke="var(--ink)" stroke-width="2" opacity=".45"/>`;
+  const blue=`<g fill="none" stroke="var(--ink)" stroke-dasharray="4 4" stroke-width="1.4" opacity=".5"><rect x="144" y="151" width="72" height="6"/><path d="M180,75 C191,88 193,108 193,129 L193,151 L167,151 L167,129 C167,108 169,88 180,75Z"/></g>`;
+  return `<svg class="scene ${cls}" viewBox="0 0 360 190" role="img" aria-label="${t('tab_cosmo')}"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--sky1)"/><stop offset="1" style="stop-color:var(--sky2)"/></linearGradient></defs>
+  <rect width="360" height="190" fill="url(#sky)"/><circle cx="292" cy="40" r="9" fill="var(--sun)"/>
+  ${st==='flight'?'<path d="M60 150 Q180 -30 300 150" fill="none" stroke="var(--ink)" stroke-opacity=".35" stroke-dasharray="3 5"/>':''}
+  <path d="M0 128 L40 118 L70 124 L110 106 L150 120 L200 111 L240 122 L290 102 L330 116 L360 109 L360 190 L0 190Z" fill="var(--ridge)"/>
+  <path d="M0 157 Q90 147 180 153 T360 150 L360 190 L0 190Z" fill="var(--ground)"/>
+  ${S.cosmo?pad+ship+crates:blue}${st==='flight'?'<circle id="dot" r="5" fill="var(--accent)" stroke="var(--panel)" stroke-width="2" cx="60" cy="150"/>':''}</svg>`}
+
+function vCosmo(){const sh=S.sh;let h=scene()+`<div class="panel">`;
+  if(!S.cosmo){const okL=S.level>=COSMO_LVL,okC=S.credits>=COSMO_COST;
+    h+=`<h3>${t('tab_cosmo')}</h3><p class="note" style="margin:0 0 12px">${t('cosmo_req',{l:COSMO_LVL,c:num(COSMO_COST)})}</p>
+    <button class="btn wide" data-act="build"${okL&&okC?'':' disabled'}>${!okL?t('need_lvl',{l:COSMO_LVL}):!okC?t('need_cr'):t('build',{c:num(COSMO_COST)})}</button>`}
+  else if(sh.st==='idle'){h+=`<h3>${t('sh_idle_h')}</h3><p class="note" style="margin:0 0 10px">${t('sh_idle_p')}</p>
+    <p class="small">${t('sh_prod')}: ${S.produced.length?S.produced.map(g=>EMO[g]+' '+nm(g)).join(', '):t('sh_none')}</p>
+    <button class="btn wide" data-act="shStart">${t('sh_start')}</button><p class="small">${t('sh_nocd')} ${t('sh_one')} ${t('sh_flights',{n:sh.flights})}</p>`}
+  else if(sh.st==='loading'){const n=sh.crates.filter(c=>c.f).length;
+    h+=`<div class="row"><h3>${t('sh_loading_h')}</h3><span class="sp small">${t('sh_left')}</span></div><div class="big" style="text-align:right">${timer(sh.loadEnd)}</div>${bar(sh.loadEnd,LOAD_T)}
+    <div class="crates">${sh.crates.map((c,i)=>`<div class="crate${c.f?' f':''}"><span class="small">${t('sh_crate',{n:i+1})}</span><span class="em">${EMO[c.g]}</span><span class="q">${nm(c.g)} × ${c.q}</span>
+      ${c.f?`<span class="have ok">${t('sh_loaded')}</span>`:`<span class="small">${t('sh_have',{h:S.inv[c.g]})}</span><button class="btn sm" data-act="shLoad" data-i="${i}"${S.inv[c.g]>=c.q?'':' disabled'}>${t('sh_load')}</button>`}</div>`).join('')}</div>
+    <button class="btn wide" data-act="shSend">${t('sh_send',{n})}</button><p class="small">${t('sh_send_note')}</p>`}
+  else if(sh.st==='flight'){h+=`<div class="row"><h3>${t('sh_flight_h')}</h3><span class="sp small">${t('sh_back')}</span></div><div class="big" style="text-align:right">${timer(sh.flightEnd)}</div>${bar(sh.flightEnd,FLIGHT_T)}
+    <p>${t('sh_cargo',{n:sh.filled})}</p><button class="btn wide${S.iso<BOOST?' ghost':''}" data-act="shBoost">⚛ ${t('sh_boost')}</button>`}
+  else{const n=sh.reward.rare.length,busy=ui.busy[sh.cid];h+=`<h3>${t('sh_ret_h')}</h3><p>${n?t('sh_ret_p',{n}):t('sh_ret_0')}</p>
+    <button class="btn wide" data-act="shClaim"${busy?' disabled':''}>${busy?t('o_sending'):n?t('sh_claim'):t('sh_claim0')}</button>`}
+  return h+`</div>`}
+
+function vEvent(){const e=S.ev,el=S.gt-S.evStart,over=el>=SEASON;const me={n:t('ev_you'),p:e.pts,me:1};
+  const board=BOTS.map(([n,b,r])=>({n,p:Math.floor(b+r*Math.min(el,SEASON)/H)})).concat([me]).sort((a,b)=>b.p-a.p);const rank=board.indexOf(me)+1;
+  let h=`<h2>${t('ev_h')}</h2><p class="note">${t('ev_p')}</p><div class="panel" style="margin-top:0"><div class="row"><div><div class="small">${over?t('ev_over'):t('ev_left')}</div><div class="big">${over?'—':timer(S.evStart+SEASON)}</div></div>
+  <div class="sp" style="text-align:right"><div class="small">${t('ev_pts')}</div><div class="big">${e.pts}</div></div></div><p class="small" style="margin-bottom:0">${t('ev_rank',{r:rank})}</p></div>
+  <h2>${t('ev_chain')}</h2><ol class="tasks">`+TASKS.map(([k,n],i)=>{const st=i<e.step?'done':i===e.step?'cur':'';
+    return `<li class="${st}"><span class="n">${i<e.step?'✓':i+1}</span><span>${t('ev_'+k,{n})}</span><span class="small">${i===e.step?`${e.cnt}/${n}`:i<e.step?'+100':''}</span></li>`}).join('')+
+  `</ol><p class="small">${t('ev_final')}</p><h2>${t('ev_board')}</h2><ol class="lb">`+board.slice(0,10).map((b,i)=>`<li class="${b.me?'me':''}"><span class="r">${i+1}</span><span>${b.n}</span><span>${b.p}</span></li>`).join('')+`</ol>`;
+  return h}
+
+function vOps(){const s=S.set,lang=s.lang==='ru'?'ru':'en';
+  let h=`<h2>${t('ops_h')}</h2><p class="note">${t('ops_p')}</p><div class="panel" style="margin-top:0"><div class="small">${t('speed')}</div><div class="seg">${SPEEDS.map((v,i)=>`<button data-act="speed" data-v="${v}" aria-pressed="${s.speed===v}">${t('sp'+i)}</button>`).join('')}</div></div>
+  <div class="panel">${[['net','net'],['bugF','bugF'],['an','an']].map(([k,l])=>`<label class="tg"><span>${t(l)}</span><span class="d">${t(l+'_d')}</span><input type="checkbox" data-set="${k}"${s[k]?' checked':''}></label>`).join('')}</div>
+  <div class="panel"><h3>${t('cheats')}</h3><div class="cheats">${['c_lvl','c_cr','c_iso','c_goods','c_ev'].map(k=>`<button class="btn ghost sm" data-act="${k}">${t(k)}</button>`).join('')}<button class="btn danger sm" data-act="c_reset">${t('c_reset')}</button></div></div>
+  <div class="panel"><h3>${t('reqlog')}</h3>${S.reqlog.length?`<ul class="log">${S.reqlog.map(r=>`<li><code>${r.id}</code><span class="k-${r.kind}">${t('rl_'+r.kind)}</span></li>`).join('')}</ul>`:`<p class="small">${t('empty_log')}</p>`}</div>
+  ${s.an?`<div class="panel"><h3>${t('evlog')}</h3>${S.events.length?`<ul class="log">${S.events.map(e=>`<li><code>${e.name}</code><code>crates_filled=${e.params.crates_filled} level=${e.params.level}</code></li>`).join('')}</ul>`:`<p class="small">${t('empty_log')}</p>`}</div>`:''}
+  <div class="panel"><h3>${t('spec_h')}</h3><ul class="spec">${SPEC[lang].map(x=>`<li>${x}</li>`).join('')}</ul></div>
+  <div class="panel"><h3>${t('assum_h')}</h3><ul class="spec" style="list-style:'? '">${ASSUM[lang].map(x=>`<li>${x}</li>`).join('')}</ul></div>
+  <p class="credit">${t('credit')}</p>`;return h}
+
+function render(){renderHud();renderTabs();const v={colony:vColony,orders:vOrders,cosmo:vCosmo,event:vEvent,ops:vOps}[tab];document.getElementById('view').innerHTML=v();ui.lastSig=sig();moveDot()}
+function sig(){return [tab,S.domes.map(d=>d.c?(S.gt>=d.end?2:1):0).join(''),Object.values(S.fac).map(f=>f.r?(S.gt>=f.end?2:1):0).join(''),S.sh.st,S.gt>=S.evStart+SEASON,tab==='event'?Math.floor(S.gt/1800):''].join('|')}
+function moveDot(){const d=document.getElementById('dot');if(!d)return;const p=Math.max(0,Math.min(1,1-(S.sh.flightEnd-S.gt)/FLIGHT_T));const q=1-p;
+  d.setAttribute('cx',q*q*60+2*q*p*180+p*p*300);d.setAttribute('cy',q*q*150+2*q*p*-30+p*p*150)}
+
+let lastT=performance.now(),saveT=0;
+function tick(){const now=performance.now();const dt=Math.min((now-lastT)/1000,5);lastT=now;S.gt+=dt*S.set.speed;
+  const sh=S.sh;if(S.cosmo){if(sh.st==='loading'&&S.gt>=sh.loadEnd)shSend(true);if(sh.st==='flight'&&S.gt>=sh.flightEnd)shReturn()}
+  if(sig()!==ui.lastSig)render();
+  document.querySelectorAll('[data-end]').forEach(el=>{const end=+el.dataset.end,rem=end-S.gt;if(el.dataset.dur)el.style.width=Math.min(100,Math.max(0,100*(1-rem/+el.dataset.dur)))+'%';else el.textContent=fmt(rem)});
+  moveDot();saveT+=dt;if(saveT>3){saveT=0;save()}}
+
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  if(a==='bgclose'){if(e.target===b&&S.intro)closeModal();return}if(A[a]&&!b.disabled)A[a](b.dataset)});
+document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.set;if(!k)return;S.set[k]=e.target.checked;save();render()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.intro)closeModal()});
+window.addEventListener('pagehide',save);
+
+load();document.documentElement.lang=S.set.lang;render();if(!S.intro)intro();setInterval(tick,200);
+})();
+</script>
+</body>
+</html>
